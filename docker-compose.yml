@@ -1,0 +1,22 @@
+services:
+  crop:
+    image: highlightprocessing
+    build: .
+    volumes:
+      - ./videos:/videos
+    working_dir: /app
+    entrypoint: ["python", "src/crop_video_moviepy.py"]
+
+  scrub_voices:
+    image: highlightprocessing
+    volumes:
+      - ./videos:/videos
+    working_dir: /app
+    entrypoint: ["python", "src/scrub_voices.py"]
+
+  process:
+    image: highlightprocessing
+    volumes:
+      - ./videos:/videos
+    working_dir: /app
+    entrypoint: ["python", "src/process_video.py"]
