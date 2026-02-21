@@ -32,7 +32,7 @@ Output: `videos/input_final.mp4`
 docker compose run --rm process_all /videos
 ```
 
-Processes every `.mp4` in the folder that hasn't already been processed (skips files ending in `_final`, `_cropped`, `_cropped_9_16`, `_novocals`). Videos are processed in parallel.
+Processes every `.mp4` in the folder that hasn't already been processed (skips files ending in `_final`, `_cropped`, `_cropped_9_16`, `_novocals`).
 
 ### Crop Only (9:16 portrait)
 
