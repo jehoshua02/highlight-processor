@@ -31,10 +31,16 @@ def find_unprocessed_videos(folder):
         full = os.path.join(folder, entry)
         if not os.path.isfile(full):
             continue
-        _, ext = os.path.splitext(entry)
+        name, ext = os.path.splitext(entry)
         if ext.lower() not in VIDEO_EXTENSIONS:
             continue
         if is_already_processed(full):
+            continue
+        # Skip if any known derived file already exists for this source
+        existing = [f"{name}{suffix}{ext}" for suffix in KNOWN_SUFFIXES
+                    if os.path.exists(os.path.join(folder, f"{name}{suffix}{ext}"))]
+        if existing:
+            print(f"  Skipping {entry} (found: {', '.join(existing)})")
             continue
         videos.append(full)
     videos.sort()
