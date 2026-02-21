@@ -18,5 +18,16 @@ services:
     image: highlightprocessing
     volumes:
       - ./videos:/videos
+      - ./.ig_session.json:/app/.ig_session.json
     working_dir: /app
+    env_file: .env
     entrypoint: ["python", "src/process_video.py"]
+
+  upload-instagram:
+    image: highlightprocessing
+    volumes:
+      - ./videos:/videos
+      - ./.ig_session.json:/app/.ig_session.json
+    working_dir: /app
+    env_file: .env
+    entrypoint: ["python", "src/upload_instagram.py"]
