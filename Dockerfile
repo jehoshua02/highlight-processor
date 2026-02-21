@@ -17,5 +17,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Copy source code
 COPY src/ /app/src/
 
+# Ensure src/ is on the Python path so modules can import each other
+ENV PYTHONPATH="/app/src:${PYTHONPATH}"
+
 # No default entrypoint — set per service in docker-compose
 CMD ["python", "--version"]

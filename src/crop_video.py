@@ -1,9 +1,9 @@
 """
-crop_video_moviepy.py
+crop_video.py
 Crop a video to 9:16 aspect ratio using moviepy (no ffmpeg CLI required).
 
 Usage:
-	python crop_video_moviepy.py input.mp4 [output.mp4]
+	python crop_video.py input.mp4 [output.mp4]
 
 Requires:
 	pip install moviepy
@@ -31,7 +31,7 @@ def crop_video_9_16(input_path, output_path=None):
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2 or len(sys.argv) > 3:
-		print("Usage: python crop_video_moviepy.py input.mp4 [output.mp4]")
+		print("Usage: python crop_video.py input.mp4 [output.mp4]")
 		sys.exit(1)
 	input_path = sys.argv[1]
 	output_path = sys.argv[2] if len(sys.argv) == 3 else None
