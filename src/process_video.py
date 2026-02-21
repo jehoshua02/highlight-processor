@@ -7,7 +7,7 @@ Usage:
 """
 import sys
 import os
-from crop_video_moviepy import crop_video_9_16
+from crop_video import crop_video_9_16
 from scrub_voices import scrub_voices
 
 
