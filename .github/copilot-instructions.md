@@ -45,7 +45,7 @@
 
 ## Key Dependencies
 - `moviepy 1.0.3` — video editing
-- `spleeter 2.4.0` — AI vocal separation
+- `demucs` — AI vocal separation (Meta, PyTorch-based)
 - `Flask ≥3.0` — webhook server
 - `numpy <2.0`, `Pillow <10.0` — pinned for compatibility
 - System: `ffmpeg`, `libsndfile1`

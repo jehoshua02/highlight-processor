@@ -1,4 +1,4 @@
 moviepy==1.0.3
-spleeter==2.4.0
+demucs
 numpy<2.0
 Pillow<10.0
