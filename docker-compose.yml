@@ -52,6 +52,21 @@ services:
       - NGROK_URL=${NGROK_URL}
     entrypoint: ["python", "src/tiktok_upload.py"]
 
+  upload_one_video:
+    <<: *processing
+    environment:
+      - IG_USER_ID=${IG_USER_ID}
+      - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
+      - NGROK_URL=${NGROK_URL}
+      - YT_CLIENT_ID=${YT_CLIENT_ID}
+      - YT_CLIENT_SECRET=${YT_CLIENT_SECRET}
+      - YT_REFRESH_TOKEN=${YT_REFRESH_TOKEN}
+      - TT_CLIENT_KEY=${TT_CLIENT_KEY}
+      - TT_CLIENT_SECRET=${TT_CLIENT_SECRET}
+      - TT_ACCESS_TOKEN=${TT_ACCESS_TOKEN}
+      - TT_REFRESH_TOKEN=${TT_REFRESH_TOKEN}
+    entrypoint: ["python", "src/upload_one_video.py"]
+
   webhook:
     build:
       context: .
