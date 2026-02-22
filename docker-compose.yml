@@ -42,6 +42,16 @@ services:
       - YT_REFRESH_TOKEN=${YT_REFRESH_TOKEN}
     entrypoint: ["python", "src/youtube_upload.py"]
 
+  tiktok_upload:
+    <<: *processing
+    environment:
+      - TT_CLIENT_KEY=${TT_CLIENT_KEY}
+      - TT_CLIENT_SECRET=${TT_CLIENT_SECRET}
+      - TT_ACCESS_TOKEN=${TT_ACCESS_TOKEN}
+      - TT_REFRESH_TOKEN=${TT_REFRESH_TOKEN}
+      - NGROK_URL=${NGROK_URL}
+    entrypoint: ["python", "src/tiktok_upload.py"]
+
   webhook:
     build:
       context: .
