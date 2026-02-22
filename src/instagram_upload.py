@@ -4,8 +4,10 @@ Upload a processed video to Instagram Reels via the Graph API.
 The video must be publicly accessible — we use the ngrok file-server URL
 that is already configured in docker-compose.
 
+Caption is derived automatically from the video filename.
+
 Usage:
-    python instagram_upload.py /videos/clip_final.mp4 ["optional caption"]
+    python instagram_upload.py /videos/clip_final.mp4
 
 Required environment variables:
     IG_USER_ID          Instagram / Facebook Page-backed IG user ID
@@ -143,13 +145,25 @@ def publish(user_id, token, container_id):
     return media_id
 
 
-def upload_reel(filepath, caption=None):
+def _caption_from_filename(filepath):
+    """Derive a caption from the video filename."""
+    base = os.path.splitext(os.path.basename(filepath))[0]
+    for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
+        base = base.replace(suffix, "")
+    name = base.replace("_", " ").strip().title()
+    return f"{name}\n\n#Reels #Gaming #Highlights"
+
+
+def upload_reel(filepath):
     """Full upload flow: validate → create container → poll → publish."""
     validate_file(filepath)
 
     user_id = _require_env("IG_USER_ID")
     token = _require_env("IG_ACCESS_TOKEN")
     ngrok_base = _require_env("NGROK_URL")
+
+    caption = _caption_from_filename(filepath)
+    print(f"Caption: {caption}")
 
     video_url = build_video_url(filepath, ngrok_base)
     print(f"Video URL: {video_url}")
@@ -163,15 +177,15 @@ def upload_reel(filepath, caption=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] == "--help":
-        print("Usage: python instagram_upload.py <video_path> [caption]")
+        print("Usage: python instagram_upload.py <video_path>")
         print()
         print("  Uploads a _final video to Instagram Reels.")
+        print("  Caption is derived from the filename.")
         print("  The video must be served via the ngrok file-server.")
         print()
         print("Docker usage:")
-        print('  docker compose run --rm instagram_upload "/videos/clip_final.mp4" "My caption"')
+        print('  docker compose run --rm instagram_upload "/videos/clip_final.mp4"')
         sys.exit(0 if sys.argv[-1] == "--help" else 1)
 
     filepath = sys.argv[1]
-    caption = sys.argv[2] if len(sys.argv) >= 3 else None
-    upload_reel(filepath, caption)
+    upload_reel(filepath)

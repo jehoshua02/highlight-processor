@@ -14,7 +14,7 @@
 | `scrub_voices.py` | Extracts audio → Spleeter 2-stem separation → replaces with accompaniment only |
 | `process_one_video.py` | Orchestrates crop → scrub; uses `_processing` suffix for intermediates, renames to `_final` on success |
 | `process_all_videos.py` | Batch runner; scans folder for unprocessed videos, processes sequentially |
-| `instagram_upload.py` | 3-step Graph API upload: create container → poll status → publish. Uses ngrok URL for public file access |
+| `instagram_upload.py` | 3-step Graph API upload: create container → poll status → publish. Caption derived from filename. Uses ngrok URL for public file access |
 | `youtube_upload.py` | YouTube Shorts upload via Data API v3 resumable upload. Title and description derived from filename. Includes `--auth` OAuth flow for obtaining refresh token |
 | `webhook_server.py` | Flask app for Meta webhook verification (GET) and event receipt (POST) at `/webhook/instagram` |
 
@@ -55,7 +55,7 @@ All operations run via Docker Compose:
 ```
 docker compose run --rm process "/videos/myclip.mp4"
 docker compose run --rm process_all
-docker compose run --rm instagram_upload "/videos/clip_final.mp4" "Caption"
+docker compose run --rm instagram_upload "/videos/clip_final.mp4"
 docker compose run --rm youtube_upload "/videos/clip_final.mp4"
 docker compose run --rm -p 8080:8080 youtube_upload --auth
 ```
