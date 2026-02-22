@@ -5,8 +5,10 @@ Uses only urllib (no google-api-python-client) to keep dependencies minimal.
 Shorts are regular YouTube uploads with vertical video (9:16).
 The pipeline already crops to 9:16, so any _final video is Shorts-ready.
 
+Title and description are derived automatically from the video filename.
+
 Usage:
-    python youtube_upload.py <video_path> ["title"] ["description"]
+    python youtube_upload.py <video_path>
     python youtube_upload.py --auth
 
 Required environment variables (upload):
@@ -157,7 +159,26 @@ def _upload_file(upload_url, filepath):
     sys.exit(1)
 
 
-def upload_short(filepath, title=None, description=None):
+def _title_from_filename(filepath):
+    """Derive a human-readable title from the video filename."""
+    base = os.path.splitext(os.path.basename(filepath))[0]
+    # Strip pipeline suffixes
+    for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
+        base = base.replace(suffix, "")
+    title = base.replace("_", " ").strip().title()
+    return f"{title} #Shorts"
+
+
+def _description_from_filename(filepath):
+    """Derive a short description from the video filename."""
+    base = os.path.splitext(os.path.basename(filepath))[0]
+    for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
+        base = base.replace(suffix, "")
+    name = base.replace("_", " ").strip().title()
+    return f"{name}\n\n#Shorts #Gaming #Highlights"
+
+
+def upload_short(filepath):
     """Full upload flow: validate → get token → init upload → send file."""
     validate_file(filepath)
 
@@ -165,15 +186,8 @@ def upload_short(filepath, title=None, description=None):
     client_secret = _require_env("YT_CLIENT_SECRET")
     refresh_token = _require_env("YT_REFRESH_TOKEN")
 
-    if not title:
-        base = os.path.splitext(os.path.basename(filepath))[0]
-        base = base.replace("_final", "").replace("_", " ").strip()
-        title = f"{base} #Shorts"
-    elif "#shorts" not in title.lower():
-        title = f"{title} #Shorts"
-
-    if not description:
-        description = ""
+    title = _title_from_filename(filepath)
+    description = _description_from_filename(filepath)
 
     print(f"Title:       {title}")
     print(f"Description: {description or '(none)'}")
@@ -265,16 +279,17 @@ def authenticate():
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] == "--help":
-        print("Usage: python youtube_upload.py <video_path> [title] [description]")
+        print("Usage: python youtube_upload.py <video_path>")
         print("       python youtube_upload.py --auth")
         print()
         print("  Uploads a _final video to YouTube Shorts.")
+        print("  Title and description are derived from the filename.")
         print()
         print("  --auth    Run one-time OAuth flow to get a refresh token.")
         print("            Starts a local server on port 8080.")
         print()
         print("Docker usage:")
-        print('  docker compose run --rm youtube_upload "/videos/clip_final.mp4" "My Title"')
+        print('  docker compose run --rm youtube_upload "/videos/clip_final.mp4"')
         print('  docker compose run --rm -p 8080:8080 youtube_upload --auth')
         sys.exit(0 if sys.argv[-1] == "--help" else 1)
 
@@ -282,6 +297,4 @@ if __name__ == "__main__":
         authenticate()
     else:
         filepath = sys.argv[1]
-        title = sys.argv[2] if len(sys.argv) >= 3 else None
-        description = sys.argv[3] if len(sys.argv) >= 4 else None
-        upload_short(filepath, title, description)
+        upload_short(filepath)
