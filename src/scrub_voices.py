@@ -11,37 +11,43 @@ Requires:
 """
 import sys
 import os
+import tempfile
+import shutil
 from moviepy.editor import VideoFileClip, AudioFileClip
 from spleeter.separator import Separator
 
 def scrub_voices(input_video, output_video):
-	# Extract audio from video
-	video = VideoFileClip(input_video)
-	audio_path = 'temp_audio.wav'
-	video.audio.write_audiofile(audio_path, logger=None)
+	# Create a unique temp directory for all intermediate artifacts
+	tmp_dir = tempfile.mkdtemp(prefix='scrub_voices_')
+	try:
+		# Extract audio from video
+		video = VideoFileClip(input_video)
+		audio_path = os.path.join(tmp_dir, 'temp_audio.wav')
+		video.audio.write_audiofile(audio_path, logger=None)
 
-	# Separate vocals using spleeter
-	separator = Separator('spleeter:2stems')
-	separator.separate_to_file(audio_path, 'output')
-	no_vocals_path = os.path.join('output', os.path.splitext(os.path.basename(audio_path))[0], 'accompaniment.wav')
+		# Separate vocals using spleeter
+		separator = Separator('spleeter:2stems')
+		spleeter_output_dir = os.path.join(tmp_dir, 'output')
+		separator.separate_to_file(audio_path, spleeter_output_dir)
+		no_vocals_path = os.path.join(spleeter_output_dir, os.path.splitext(os.path.basename(audio_path))[0], 'accompaniment.wav')
 
-	# Generate output filename if not provided
-	if output_video is None:
-		base, ext = os.path.splitext(input_video)
-		output_video = f"{base}_novocals{ext}"
+		# Generate output filename if not provided
+		if output_video is None:
+			base, ext = os.path.splitext(input_video)
+			output_video = f"{base}_novocals{ext}"
 
-	# Replace audio in video
-	new_audio = AudioFileClip(no_vocals_path)
-	new_video = video.set_audio(new_audio)
-	new_video.write_videofile(output_video, audio_codec='aac')
+		# Replace audio in video
+		new_audio = AudioFileClip(no_vocals_path)
+		new_video = video.set_audio(new_audio)
+		new_video.write_videofile(output_video, audio_codec='aac')
 
-	# Cleanup
-	video.close()
-	new_audio.close()
-	new_video.close()
-	os.remove(audio_path)
-	import shutil
-	shutil.rmtree('output')
+		# Cleanup clips
+		video.close()
+		new_audio.close()
+		new_video.close()
+	finally:
+		# Always remove the temp directory, even on failure
+		shutil.rmtree(tmp_dir, ignore_errors=True)
 	return output_video
 
 if __name__ == '__main__':
