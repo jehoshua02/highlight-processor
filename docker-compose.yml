@@ -34,6 +34,14 @@ services:
       - NGROK_URL=${NGROK_URL}
     entrypoint: ["python", "src/instagram_upload.py"]
 
+  youtube_upload:
+    <<: *processing
+    environment:
+      - YT_CLIENT_ID=${YT_CLIENT_ID}
+      - YT_CLIENT_SECRET=${YT_CLIENT_SECRET}
+      - YT_REFRESH_TOKEN=${YT_REFRESH_TOKEN}
+    entrypoint: ["python", "src/youtube_upload.py"]
+
   webhook:
     build:
       context: .

@@ -4,14 +4,6 @@
 
 ---
 
-## 1. Hardcoded temp paths create race conditions and silent corruption
-
-`scrub_voices.py` writes to hardcoded `temp_audio.wav` and `output/` in the current working directory. If two containers somehow share a volume, or if the function is ever called concurrently (e.g., making `process_all` parallel), files silently overwrite each other.
-
-**Prevention:** Use `tempfile.mkdtemp()` / `tempfile.NamedTemporaryFile()` for all intermediate artifacts. Tie temp directories to the input filename or a UUID.
-
----
-
 ## 2. `sys.exit()` as error handling makes the code non-composable
 
 Nearly every function in the codebase calls `sys.exit(1)` on failure — `_api()`, `_require_env()`, `validate_file()`, `crop_video_9_16()`, etc. This means no function can be safely called from another Python program, a test harness, or a web endpoint without killing the entire process.
@@ -104,7 +96,6 @@ Processing scripts use only `print()`. There are no log levels, no timestamps, n
 
 | # | Risk | Severity | Effort to Fix |
 |---|---|---|---|
-| 1 | Hardcoded temp paths | High | Low |
 | 2 | `sys.exit()` everywhere | High | Medium |
 | 3 | No tests | High | Medium |
 | 4 | Fragile suffix state machine | Medium | Medium |
