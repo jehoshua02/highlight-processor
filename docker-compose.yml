@@ -1,45 +1,33 @@
+x-processing: &processing
+  image: highlightprocessing
+  build: .
+  volumes:
+    - ./videos:/videos
+  working_dir: /app
+
 services:
   crop:
-    image: highlightprocessing
-    build: .
-    volumes:
-      - ./videos:/videos
-    working_dir: /app
+    <<: *processing
     entrypoint: ["python", "src/crop_video.py"]
 
   scrub_voices:
-    image: highlightprocessing
-    volumes:
-      - ./videos:/videos
-    working_dir: /app
+    <<: *processing
     entrypoint: ["python", "src/scrub_voices.py"]
 
   process:
-    image: highlightprocessing
-    volumes:
-      - ./videos:/videos
-    working_dir: /app
+    <<: *processing
     entrypoint: ["python", "src/process_one_video.py"]
 
   process_all:
-    image: highlightprocessing
-    volumes:
-      - ./videos:/videos
-    working_dir: /app
+    <<: *processing
     entrypoint: ["python", "src/process_all_videos.py"]
 
   normalize:
-    image: highlightprocessing
-    volumes:
-      - ./videos:/videos
-    working_dir: /app
+    <<: *processing
     entrypoint: ["python", "src/normalize_audio.py"]
 
   instagram_upload:
-    image: highlightprocessing
-    volumes:
-      - ./videos:/videos
-    working_dir: /app
+    <<: *processing
     environment:
       - IG_USER_ID=${IG_USER_ID}
       - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
