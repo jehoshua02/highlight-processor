@@ -1,8 +1,9 @@
 """scrub_voices.py
 Remove vocals from a video using Demucs (Meta's AI source-separation model).
 
-Extracts audio, runs 2-stem separation (vocals vs accompaniment),
-and replaces the original audio with the accompaniment-only track.
+Extracts audio via FFmpeg, runs 2-stem separation (vocals vs accompaniment),
+and remuxes the accompaniment back onto the original video stream — no
+video re-encoding required.
 
 Usage:
     python scrub_voices.py input_video.mp4 [output_video.mp4]
@@ -14,11 +15,16 @@ import subprocess
 import sys
 import os
 import tempfile
-from moviepy.editor import VideoFileClip, AudioFileClip
 
 
 def scrub_voices(input_video, output_video=None):
-    """Remove vocals from video audio using Demucs 2-stem separation."""
+    """Remove vocals from video audio using Demucs 2-stem separation.
+
+    Optimised pipeline:
+      1. Extract audio to WAV (FFmpeg)
+      2. Demucs 2-stem separation, CPU-explicit, segmented for long clips
+      3. Remux original video + accompaniment audio (FFmpeg, no re-encode)
+    """
     if not os.path.isfile(input_video):
         print(f"File not found: {input_video}")
         sys.exit(1)
@@ -28,7 +34,7 @@ def scrub_voices(input_video, output_video=None):
         output_video = f"{base}_novocals{ext}"
 
     with tempfile.TemporaryDirectory(prefix="scrub_voices_") as tmp_dir:
-        # Extract audio to WAV
+        # Step 1 — Extract audio to WAV
         audio_path = os.path.join(tmp_dir, "audio.wav")
         print("  Extracting audio …")
         subprocess.run([
@@ -37,11 +43,13 @@ def scrub_voices(input_video, output_video=None):
             audio_path,
         ], check=True, capture_output=True)
 
-        # Run Demucs 2-stem separation (vocals vs everything else)
+        # Step 2 — Run Demucs 2-stem separation
+        #   --device cpu : skip CUDA probe on CPU-only containers
         print("  Running Demucs vocal separation …")
         subprocess.run([
             sys.executable, "-m", "demucs",
             "--two-stems", "vocals",
+            "--device", "cpu",
             "-o", tmp_dir,
             "--filename", "{stem}.{ext}",
             audio_path,
@@ -58,16 +66,22 @@ def scrub_voices(input_video, output_video=None):
                     print(f"    {os.path.join(root, f)}")
             sys.exit(1)
 
-        # Merge accompaniment back with video
-        print("  Merging accompaniment with video …")
-        video = VideoFileClip(input_video)
-        new_audio = AudioFileClip(accompaniment)
-        final = video.set_audio(new_audio)
-        final.write_videofile(output_video, audio_codec="aac")
-        video.close()
-        new_audio.close()
-        final.close()
+        # Step 3 — Remux: copy video stream + encode new audio as AAC
+        #   -c:v copy avoids re-encoding video (huge speed win)
+        print("  Remuxing accompaniment with original video …")
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-i", input_video,
+            "-i", accompaniment,
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-movflags", "+faststart",
+            output_video,
+        ], check=True, capture_output=True)
 
+    print(f"  Saved: {output_video}")
     return output_video
 
 

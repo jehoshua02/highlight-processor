@@ -1,4 +1,3 @@
-moviepy==1.0.3
 demucs
 numpy<2.0
 Pillow<10.0
