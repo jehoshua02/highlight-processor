@@ -1,0 +1,9 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir "flask>=3.0,<4.0"
+
+COPY src/webhook_server.py /app/src/webhook_server.py
+
+CMD ["python", "src/webhook_server.py"]
