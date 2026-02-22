@@ -70,6 +70,8 @@ PIPELINE_STEPS = [
     "Uploading",
 ]
 
+UPLOAD_PLATFORMS = ["Instagram Reels", "YouTube Shorts", "TikTok"]
+
 
 class LiveDisplay:
     """Manages a live-updating multi-line terminal display.
@@ -98,8 +100,14 @@ class LiveDisplay:
                 for s in PIPELINE_STEPS
             ]
 
+        # Per-video upload platform status: {name: {platform: status}}
+        self.uploads = {n: {} for n in slots}
+
         # Latest output line per video (shown under active step)
         self.last_output = {n: "" for n in slots}
+
+        # Full log per video (for failure dump)
+        self.logs = {n: [] for n in slots}
 
     def start_video(self, name):
         with self.lock:
@@ -132,6 +140,12 @@ class LiveDisplay:
     def set_output(self, name, line):
         with self.lock:
             self.last_output[name] = line.strip()
+            self.logs[name].append(line.strip())
+
+    def set_upload_status(self, name, platform, status):
+        """Track per-platform upload status (uploading/done/failed)."""
+        with self.lock:
+            self.uploads[name][platform] = status
 
     def _fmt_time(self, start, end=None):
         if start is None:
@@ -210,12 +224,20 @@ class LiveDisplay:
                     st = self._fmt_time(s["start"], s["end"])
                     step_line = f"  {si} [{st}] {i + 1}. {s['name']}"
 
-                    # Show last output under active/last step
-                    if i == current and self.last_output[name]:
+                    # Show last output or upload sub-status under active/last step
+                    if i == current:
                         lines.append(step_line)
-                        out = self.last_output[name]
-                        out_line = f"    {DIM}{self._truncate(out, self.term_width - 6)}{RESET}"
-                        lines.append(out_line)
+                        # For the upload step, show per-platform status
+                        if s["name"] == "Uploading" and self.uploads.get(name):
+                            for plat in UPLOAD_PLATFORMS:
+                                ps = self.uploads[name].get(plat)
+                                if ps:
+                                    pi = self._icon(ps)
+                                    lines.append(f"    {pi} {plat}")
+                        elif self.last_output[name]:
+                            out = self.last_output[name]
+                            out_line = f"    {DIM}{self._truncate(out, self.term_width - 6)}{RESET}"
+                            lines.append(out_line)
                     else:
                         lines.append(step_line)
 
@@ -285,6 +307,20 @@ def run_one_live(video_path, display, name, no_upload=False):
                 display.finish_step(name, current_step)
             current_step = 3
             display.start_step(name, 3)
+
+        # Per-platform upload status
+        if "↗" in stripped:
+            for plat in UPLOAD_PLATFORMS:
+                if plat in stripped:
+                    display.set_upload_status(name, plat, "running")
+        elif "✔" in stripped:
+            for plat in UPLOAD_PLATFORMS:
+                if plat in stripped:
+                    display.set_upload_status(name, plat, "done")
+        elif "✘" in stripped:
+            for plat in UPLOAD_PLATFORMS:
+                if plat in stripped:
+                    display.set_upload_status(name, plat, "failed")
 
     proc.wait()
 

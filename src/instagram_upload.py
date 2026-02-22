@@ -73,6 +73,26 @@ def build_video_url(filepath, ngrok_base):
     return f"{ngrok_base.rstrip('/')}/{encoded}"
 
 
+def _preflight_check(video_url):
+    """Verify the video URL is reachable and returns video content."""
+    req = Request(video_url, method="HEAD")
+    req.add_header("ngrok-skip-browser-warning", "true")
+    try:
+        with urlopen(req) as resp:
+            ct = resp.headers.get("Content-Type", "")
+            cl = resp.headers.get("Content-Length", "?")
+            print(f"  Pre-flight OK: {ct}, {int(cl)/(1024*1024):.1f} MB")
+            if "video" not in ct and "octet-stream" not in ct:
+                print(f"  Warning: unexpected Content-Type '{ct}' — Instagram may reject this.")
+    except HTTPError as exc:
+        print(f"  Pre-flight FAILED ({exc.code}) — Instagram won't be able to fetch the video.")
+        print(f"  Check that ngrok + file-server are running and the URL is correct.")
+        sys.exit(1)
+    except Exception as exc:
+        print(f"  Pre-flight FAILED: {exc}")
+        sys.exit(1)
+
+
 def create_container(user_id, token, video_url, caption=None):
     """Step 1: Create a media container for the Reel."""
     params = {
@@ -167,6 +187,7 @@ def upload_reel(filepath):
 
     video_url = build_video_url(filepath, ngrok_base)
     print(f"Video URL: {video_url}")
+    _preflight_check(video_url)
     print()
 
     container_id = create_container(user_id, token, video_url, caption)

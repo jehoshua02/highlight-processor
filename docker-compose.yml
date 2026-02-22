@@ -16,6 +16,7 @@ services:
 
   process:
     <<: *processing
+    depends_on: [ngrok, file-server]
     environment:
       - IG_USER_ID=${IG_USER_ID}
       - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
@@ -31,6 +32,7 @@ services:
 
   process_all:
     <<: *processing
+    depends_on: [ngrok, file-server]
     environment:
       - IG_USER_ID=${IG_USER_ID}
       - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
@@ -50,6 +52,7 @@ services:
 
   instagram_upload:
     <<: *processing
+    depends_on: [ngrok, file-server]
     environment:
       - IG_USER_ID=${IG_USER_ID}
       - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
@@ -76,6 +79,7 @@ services:
 
   upload_one_video:
     <<: *processing
+    depends_on: [ngrok, file-server]
     environment:
       - IG_USER_ID=${IG_USER_ID}
       - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}

@@ -97,6 +97,9 @@ def _init_upload(access_token, title, filepath):
     """Initialize a direct-post file upload and return (publish_id, upload_url)."""
     file_size = os.path.getsize(filepath)
 
+    chunk_size = min(CHUNK_SIZE, file_size)
+    total_chunks = max(1, file_size // chunk_size)
+
     payload = {
         "post_info": {
             "title": title,
@@ -109,12 +112,12 @@ def _init_upload(access_token, title, filepath):
         "source_info": {
             "source": "FILE_UPLOAD",
             "video_size": file_size,
-            "chunk_size": file_size,
-            "total_chunk_count": 1,
+            "chunk_size": chunk_size,
+            "total_chunk_count": total_chunks,
         },
     }
 
-    print(f"  video_size={file_size}")
+    print(f"  video_size={file_size}, chunk_size={chunk_size}, total_chunks={total_chunks}")
     body = json.dumps(payload).encode()
 
     req = Request(INIT_URI, data=body, method="POST")
@@ -149,23 +152,35 @@ def _init_upload(access_token, title, filepath):
 def _upload_file(upload_url, filepath):
     """Upload the video file in chunks to TikTok's upload URL."""
     file_size = os.path.getsize(filepath)
-    print(f"Uploading {file_size / (1024*1024):.1f} MB …")
+    chunk_size = min(CHUNK_SIZE, file_size)
+    total_chunks = max(1, file_size // chunk_size)
+    print(f"Uploading {file_size / (1024*1024):.1f} MB in {total_chunks} chunk(s) …")
 
     with open(filepath, "rb") as f:
-        data = f.read()
+        for i in range(total_chunks):
+            offset = i * chunk_size
+            # Last chunk absorbs all remaining bytes (can exceed chunk_size)
+            if i == total_chunks - 1:
+                data = f.read()
+            else:
+                data = f.read(chunk_size)
+            end = offset + len(data) - 1
 
-    req = Request(upload_url, data=data, method="PUT")
-    req.add_header("Content-Type", "video/mp4")
-    req.add_header("Content-Length", str(file_size))
-    req.add_header("Content-Range", f"bytes 0-{file_size - 1}/{file_size}")
+            req = Request(upload_url, data=data, method="PUT")
+            req.add_header("Content-Type", "video/mp4")
+            req.add_header("Content-Length", str(len(data)))
+            req.add_header("Content-Range", f"bytes {offset}-{end}/{file_size}")
 
-    try:
-        with urlopen(req) as resp:
-            pass
-    except HTTPError as exc:
-        body_text = exc.read().decode()
-        print(f"Upload failed ({exc.code}): {body_text}")
-        sys.exit(1)
+            try:
+                with urlopen(req) as resp:
+                    pass
+            except HTTPError as exc:
+                body_text = exc.read().decode()
+                print(f"  Chunk {i+1}/{total_chunks} failed ({exc.code}): {body_text}")
+                sys.exit(1)
+
+            pct = int((i + 1) / total_chunks * 100)
+            print(f"  {pct}% uploaded ({i+1}/{total_chunks} chunks)")
 
     print("  Upload complete!")
 

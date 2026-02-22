@@ -1,9 +1,9 @@
 """upload_one_video.py
 Upload a single video to all platforms: Instagram Reels, YouTube Shorts,
-and TikTok.
+and TikTok — in parallel.
 
-Runs each upload sequentially and reports results at the end.
-A single platform failure does not prevent the others from running.
+Each platform runs in its own thread. A single platform failure does not
+prevent the others from completing.
 
 Usage:
     python upload_one_video.py <video_path>
@@ -16,10 +16,27 @@ Required environment variables:
 
 import sys
 import os
+import threading
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 
 from instagram_upload import upload_reel
 from youtube_upload import upload_short
 from tiktok_upload import upload_tiktok
+
+
+def _is_ngrok_up():
+    """Quick check whether the ngrok tunnel is reachable."""
+    ngrok_url = os.environ.get("NGROK_URL", "").strip()
+    if not ngrok_url:
+        return False
+    try:
+        req = Request(ngrok_url, method="HEAD")
+        with urlopen(req, timeout=5) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
 
 PLATFORMS = [
     ("Instagram Reels", upload_reel),
@@ -29,41 +46,55 @@ PLATFORMS = [
 
 
 def upload_one_video(filepath):
-    """Upload one video to every platform, collecting results."""
-    results = []
+    """Upload one video to every platform in parallel, collecting results."""
+    results = {}
+    lock = threading.Lock()
 
-    for name, upload_fn in PLATFORMS:
-        print("=" * 60)
-        print(f"  Uploading to {name}")
-        print("=" * 60)
-        print()
+    # Check ngrok availability for Instagram
+    ngrok_up = _is_ngrok_up()
+
+    def _upload(name, upload_fn):
         try:
+            print(f"  ↗ {name}: uploading…")
             upload_fn(filepath)
-            results.append((name, True, None))
+            with lock:
+                results[name] = (True, None)
+            print(f"  ✔ {name}: done")
         except SystemExit:
-            results.append((name, False, "upload exited with error"))
+            with lock:
+                results[name] = (False, "upload exited with error")
+            print(f"  ✘ {name}: upload exited with error")
         except Exception as exc:
-            results.append((name, False, str(exc)))
-        print()
+            with lock:
+                results[name] = (False, str(exc))
+            print(f"  ✘ {name}: {exc}")
+
+    threads = []
+    for name, upload_fn in PLATFORMS:
+        if name == "Instagram Reels" and not ngrok_up:
+            print(f"  ⚠ Skipping {name} — ngrok is not reachable")
+            with lock:
+                results[name] = (False, "ngrok not reachable")
+            continue
+        t = threading.Thread(target=_upload, args=(name, upload_fn))
+        threads.append(t)
+        t.start()
+
+    for t in threads:
+        t.join()
 
     # Summary
-    print("=" * 60)
-    print("  Upload Summary")
-    print("=" * 60)
-    failed = 0
-    for name, ok, err in results:
-        if ok:
-            print(f"  {name}: OK")
-        else:
-            print(f"  {name}: FAILED — {err}")
-            failed += 1
-    print()
+    failed = sum(1 for ok, _ in results.values() if not ok)
+    succeeded = sum(1 for ok, _ in results.values() if ok)
+    print(f"  Uploads: {succeeded} succeeded, {failed} failed out of {len(results)}")
 
     if failed:
-        print(f"{failed} of {len(results)} uploads failed.")
+        for name, (ok, err) in results.items():
+            if not ok:
+                print(f"    ✘ {name}: {err}")
         sys.exit(1)
     else:
-        print("All uploads succeeded!")
+        print("  All uploads succeeded!")
 
 
 if __name__ == "__main__":
