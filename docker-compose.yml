@@ -28,6 +28,13 @@ services:
     working_dir: /app
     entrypoint: ["python", "src/process_all_videos.py"]
 
+  normalize:
+    image: highlightprocessing
+    volumes:
+      - ./videos:/videos
+    working_dir: /app
+    entrypoint: ["python", "src/normalize_audio.py"]
+
   instagram_upload:
     image: highlightprocessing
     volumes:
