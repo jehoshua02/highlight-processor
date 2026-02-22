@@ -49,3 +49,21 @@ docker compose run --rm scrub_voices /videos/input.mp4
 ```
 
 Output: `videos/input_novocals.mp4`
+
+### Upload to Instagram Reels
+
+Requires `IG_USER_ID`, `IG_ACCESS_TOKEN`, and `NGROK_URL` in your `.env` file.
+The ngrok file-server must be running so Instagram can fetch the video.
+
+```sh
+# Start the file server + ngrok tunnel first
+docker compose up -d ngrok
+
+# Upload a processed video
+docker compose run --rm instagram_upload "/videos/Fortnite 2026.02.20 - 21.27.50.06.Elimination.DVR_final.mp4"
+
+# With a caption
+docker compose run --rm instagram_upload "/videos/clip_final.mp4" "Check out this highlight!"
+```
+
+Only `_final` videos can be uploaded — raw or intermediate files are rejected.

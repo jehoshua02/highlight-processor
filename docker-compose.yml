@@ -28,6 +28,17 @@ services:
     working_dir: /app
     entrypoint: ["python", "src/process_all_videos.py"]
 
+  instagram_upload:
+    image: highlightprocessing
+    volumes:
+      - ./videos:/videos
+    working_dir: /app
+    environment:
+      - IG_USER_ID=${IG_USER_ID}
+      - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
+      - NGROK_URL=${NGROK_URL}
+    entrypoint: ["python", "src/instagram_upload.py"]
+
   webhook:
     build:
       context: .
