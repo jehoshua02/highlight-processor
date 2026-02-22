@@ -114,7 +114,7 @@ def _init_upload(access_token, title, filepath):
         },
     }
 
-    print(f"  video_size={file_size}, chunk_size={file_size}, total_chunk_count=1")
+    print(f"  video_size={file_size}")
     body = json.dumps(payload).encode()
 
     req = Request(INIT_URI, data=body, method="POST")
