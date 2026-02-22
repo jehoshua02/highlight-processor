@@ -16,10 +16,32 @@ services:
 
   process:
     <<: *processing
+    environment:
+      - IG_USER_ID=${IG_USER_ID}
+      - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
+      - NGROK_URL=${NGROK_URL}
+      - YT_CLIENT_ID=${YT_CLIENT_ID}
+      - YT_CLIENT_SECRET=${YT_CLIENT_SECRET}
+      - YT_REFRESH_TOKEN=${YT_REFRESH_TOKEN}
+      - TT_CLIENT_KEY=${TT_CLIENT_KEY}
+      - TT_CLIENT_SECRET=${TT_CLIENT_SECRET}
+      - TT_ACCESS_TOKEN=${TT_ACCESS_TOKEN}
+      - TT_REFRESH_TOKEN=${TT_REFRESH_TOKEN}
     entrypoint: ["python", "src/process_one_video.py"]
 
   process_all:
     <<: *processing
+    environment:
+      - IG_USER_ID=${IG_USER_ID}
+      - IG_ACCESS_TOKEN=${IG_ACCESS_TOKEN}
+      - NGROK_URL=${NGROK_URL}
+      - YT_CLIENT_ID=${YT_CLIENT_ID}
+      - YT_CLIENT_SECRET=${YT_CLIENT_SECRET}
+      - YT_REFRESH_TOKEN=${YT_REFRESH_TOKEN}
+      - TT_CLIENT_KEY=${TT_CLIENT_KEY}
+      - TT_CLIENT_SECRET=${TT_CLIENT_SECRET}
+      - TT_ACCESS_TOKEN=${TT_ACCESS_TOKEN}
+      - TT_REFRESH_TOKEN=${TT_REFRESH_TOKEN}
     entrypoint: ["python", "src/process_all_videos.py"]
 
   normalize:
