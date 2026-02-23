@@ -12,8 +12,8 @@
 |---|---|
 | `crop_video.py` | Center-crops video to 9:16, resizes to 1080×1920, outputs AAC audio |
 | `scrub_voices.py` | Extracts audio → Spleeter 2-stem separation → replaces with accompaniment only |
-| `process_one_video.py` | Orchestrates crop → scrub; uses `_processing` suffix for intermediates, renames to `_final` on success |
-| `process_all_videos.py` | Batch runner; scans folder for unprocessed videos, processes sequentially |
+| `process_one_video.py` | Resumable orchestrator: crop → scrub → normalize → upload; uses filesystem checkpoints (`_cropped`, `_novocals`, `_final`) and sidecar JSON for upload tracking; moves completed files to `processed/` |
+| `process_all_videos.py` | Batch runner; scans folder for unprocessed videos, cleans stale in-progress files, processes in parallel with resume support |
 | `instagram_upload.py` | 3-step Graph API upload: create container → poll status → publish. Caption derived from filename. Uses ngrok URL for public file access |
 | `youtube_upload.py` | YouTube Shorts upload via Data API v3 resumable upload. Title and description derived from filename. Includes `--auth` OAuth flow for obtaining refresh token |
 | `webhook_server.py` | Flask app for Meta webhook verification (GET) and event receipt (POST) at `/webhook/instagram` |
@@ -38,8 +38,9 @@
 - **Error handling:** `print()` + `sys.exit(1)` pattern (no exceptions propagated in CLI mode); `process_one_video` uses `try/finally` for cleanup
 - **Output via `print()`**, not `logging` (except `webhook_server.py`)
 - **Docstrings** on all modules and most functions
-- **File naming suffixes:** `_cropped_9_16`, `_novocals`, `_final`, `_processing` (in-progress)
-- **Idempotency:** `process_all_videos.py` skips already-processed files by checking suffixes
+- **File naming suffixes:** `_cropped` (crop checkpoint), `_novocals` (scrub checkpoint), `_final` (processing complete), `_cropping`/`_scrubbing`/`_normalizing` (in-progress, deleted on failure)
+- **Sidecar JSON:** `<source>.status.json` tracks upload status (authoritative) and step timings/errors (informational)
+- **Idempotency:** `process_all_videos.py` cleans stale in-progress files, skips derivative files, and resumes from checkpoints; fully completed videos are moved to `processed/`
 - Every script has `if __name__ == "__main__"` with `--help` support and Docker usage examples
 - **Docker pattern:** One shared image for processing services; each service differs only by entrypoint
 

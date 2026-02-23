@@ -41,8 +41,29 @@ def is_already_processed(filepath):
                for suffix in KNOWN_SUFFIXES + IN_PROGRESS_SUFFIXES)
 
 
+def clean_stale_files(folder):
+    """Delete orphaned in-progress files left by a crashed run.
+
+    Files ending with _cropping, _scrubbing, or _normalizing represent
+    interrupted writes and are not reusable.  Removing them lets the
+    next run fall through to a clean retry of that step.
+    """
+    for entry in os.listdir(folder):
+        name = os.path.splitext(entry)[0]
+        if any(name.endswith(s) for s in IN_PROGRESS_SUFFIXES):
+            full = os.path.join(folder, entry)
+            if os.path.isfile(full):
+                print(f"  Cleaning stale file: {entry}")
+                os.remove(full)
+
+
 def find_unprocessed_videos(folder):
-    """Return a sorted list of video files in *folder* that need processing."""
+    """Return a sorted list of source videos in *folder* that need work.
+
+    Skips derivative files (_cropped, _novocals, _final, etc.) since they
+    are not source videos.  Source files with existing checkpoints are
+    included — process_one_video handles resume logic.
+    """
     videos = []
     for entry in os.listdir(folder):
         full = os.path.join(folder, entry)
@@ -53,11 +74,11 @@ def find_unprocessed_videos(folder):
             continue
         if is_already_processed(full):
             continue
-        existing = [f"{name}{suffix}{ext}" for suffix in KNOWN_SUFFIXES
-                    if os.path.exists(os.path.join(folder, f"{name}{suffix}{ext}"))]
-        if existing:
-            print(f"  Skipping {entry} (found: {', '.join(existing)})")
-            continue
+        checkpoints = [suffix for suffix in ("_cropped", "_novocals", "_final")
+                       if os.path.exists(os.path.join(folder, f"{name}{suffix}{ext}"))]
+        if checkpoints:
+            found = ", ".join(f"{name}{s}{ext}" for s in checkpoints)
+            print(f"  Resuming {entry} (found: {found})")
         videos.append(full)
     videos.sort()
     return videos
@@ -358,13 +379,14 @@ def main():
         print(f"Error: '{folder}' is not a directory.")
         sys.exit(1)
 
+    clean_stale_files(folder)
     videos = find_unprocessed_videos(folder)
     if not videos:
         print("No unprocessed videos found.")
         sys.exit(0)
 
     names = [os.path.basename(v) for v in videos]
-    max_workers = min(4, len(videos))
+    max_workers = min(2, len(videos))
 
     print(f"Found {len(videos)} video(s) to process ({max_workers} workers):\n")
 
