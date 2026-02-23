@@ -25,7 +25,8 @@ from urllib.error import HTTPError
 
 GRAPH_API = "https://graph.instagram.com/v21.0"
 POLL_INTERVAL = 30       # seconds between status checks
-POLL_TIMEOUT = 300       # give up after 5 minutes
+POLL_TIMEOUT = 600       # give up after 10 minutes
+MAX_RATE_LIMIT_RETRIES = 5  # retry this many times on rate-limit errors
 
 
 def _require_env(name):
@@ -121,6 +122,7 @@ def wait_for_container(container_id, token):
     poll_url = f"{url}?{params}"
 
     start = time.time()
+    rate_limit_retries = 0
     while True:
         elapsed = time.time() - start
         if elapsed > POLL_TIMEOUT:
@@ -133,9 +135,20 @@ def wait_for_container(container_id, token):
                 data = json.loads(resp.read())
         except HTTPError as exc:
             body = exc.read().decode()
+            # Retry on rate-limit errors with exponential backoff
+            if exc.code in (403, 429) and "rate" in body.lower():
+                rate_limit_retries += 1
+                if rate_limit_retries > MAX_RATE_LIMIT_RETRIES:
+                    print(f"Rate-limited {rate_limit_retries} times — giving up.")
+                    sys.exit(1)
+                backoff = 60 * rate_limit_retries  # 60s, 120s, 180s, ...
+                print(f"  Rate-limited — waiting {backoff}s before retry ({rate_limit_retries}/{MAX_RATE_LIMIT_RETRIES})")
+                time.sleep(backoff)
+                continue
             print(f"Poll error {exc.code}: {body}")
             sys.exit(1)
 
+        rate_limit_retries = 0  # reset on success
         status = data.get("status_code", "UNKNOWN")
         print(f"  Status: {status}  ({int(elapsed)}s elapsed)")
 
