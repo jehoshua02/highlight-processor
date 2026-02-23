@@ -82,11 +82,16 @@ goto :eof
 
 :process_all
 set "EXTRA_FLAGS="
+set "_next_is_limit="
 for %%a in (%*) do (
-    if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
-    if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
-    set "_arg=%%~a"
-    if "!_arg:~0,8!"=="--limit=" set "EXTRA_FLAGS=!EXTRA_FLAGS! %%~a"
+    if defined _next_is_limit (
+        set "EXTRA_FLAGS=!EXTRA_FLAGS! --limit=%%~a"
+        set "_next_is_limit="
+    ) else (
+        if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
+        if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
+        if "%%~a"=="--limit" set "_next_is_limit=1"
+    )
 )
 docker compose run --rm process_all !EXTRA_FLAGS! /videos
 goto :eof

@@ -24,7 +24,7 @@ from urllib.parse import urlencode, quote
 from urllib.error import HTTPError
 
 GRAPH_API = "https://graph.instagram.com/v21.0"
-POLL_INTERVAL = 5        # seconds between status checks
+POLL_INTERVAL = 30       # seconds between status checks
 POLL_TIMEOUT = 300       # give up after 5 minutes
 
 
