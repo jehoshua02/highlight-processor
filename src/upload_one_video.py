@@ -61,16 +61,19 @@ def _platform_key(name):
     return "upload_" + name.lower().replace(" ", "_")
 
 
-def upload_one_video(filepath, sidecar_path=None):
+def upload_one_video(filepath, sidecar_path=None, skip_platforms=None):
     """Upload one video to every platform in parallel, collecting results.
 
     If sidecar_path is provided, platforms already marked "done" are skipped
     and each result is written to the sidecar immediately on completion.
+    skip_platforms is an optional set of platform display names to skip
+    entirely (e.g. {"TikTok"}).
 
     Returns a dict of {platform_name: (ok, error_or_none)}.
     """
     results = {}
     lock = threading.Lock()
+    skip_platforms = skip_platforms or set()
 
     # Read sidecar for skip detection and write-back
     sidecar = None
@@ -159,6 +162,9 @@ def upload_one_video(filepath, sidecar_path=None):
     threads = []
     for name, upload_fn in PLATFORMS:
         if name in skip:
+            continue
+        if name in skip_platforms:
+            print(f"  ⏭ {name}: skipped (--skip-upload-tt)")
             continue
         if name == "Instagram Reels" and not ngrok_up:
             key = _platform_key(name)

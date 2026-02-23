@@ -10,8 +10,6 @@ if "%~1"=="-h" goto :help
 
 if "%~1"=="process" goto :process
 if "%~1"=="process-all" goto :process_all
-if "%~1"=="process-no-upload" goto :process_no_upload
-if "%~1"=="process-all-no-upload" goto :process_all_no_upload
 if "%~1"=="upload" goto :upload
 if "%~1"=="upload-ig" goto :upload_ig
 if "%~1"=="upload-yt" goto :upload_yt
@@ -40,6 +38,7 @@ echo     run process ^<file^>        Crop, scrub vocals, normalize, and upload
 echo     run process-all            Process + upload all unprocessed videos
 echo     run process ^<file^> --no-upload   Process only, skip upload
 echo     run process-all --no-upload       Process all, skip upload
+echo     --skip-upload-tt           Add to any process command to skip TikTok
 echo.
 echo   UPLOAD (already-processed _final videos)
 echo     run upload ^<file^>         Upload to Instagram + YouTube + TikTok
@@ -72,19 +71,21 @@ if "%~2"=="" (
     echo   e.g. run process "/videos/myclip.mp4"
     exit /b 1
 )
-if "%~3"=="--no-upload" (
-    docker compose run --rm process --no-upload "%~2"
-) else (
-    docker compose run --rm process "%~2"
+set "EXTRA_FLAGS="
+for %%a in (%*) do (
+    if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
+    if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
 )
+docker compose run --rm process !EXTRA_FLAGS! "%~2"
 goto :eof
 
 :process_all
-if "%~2"=="--no-upload" (
-    docker compose run --rm process_all --no-upload /videos
-) else (
-    docker compose run --rm process_all /videos
+set "EXTRA_FLAGS="
+for %%a in (%*) do (
+    if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
+    if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
 )
+docker compose run --rm process_all !EXTRA_FLAGS! /videos
 goto :eof
 
 :upload

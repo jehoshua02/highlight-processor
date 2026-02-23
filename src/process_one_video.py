@@ -87,7 +87,7 @@ def _run_step(sidecar, sidecar_path, step_name, step_fn, tmp_path, stable_path):
     _write_sidecar(sidecar_path, sidecar)
 
 
-def process_video(input_path, output_path=None, upload=True):
+def process_video(input_path, output_path=None, upload=True, skip_platforms=None):
     """Run the full pipeline with automatic resume from checkpoints.
 
     Filesystem is the source of truth for processing steps (checkpoint
@@ -171,7 +171,8 @@ def process_video(input_path, output_path=None, upload=True):
         return output_path
 
     print(f"[4/4] Uploading to all platforms: {output_path}")
-    results = upload_one_video(output_path, sidecar_path=sidecar_path)
+    results = upload_one_video(output_path, sidecar_path=sidecar_path,
+                               skip_platforms=skip_platforms)
     sidecar = _read_sidecar(sidecar_path)
 
     if any(not ok for ok, _ in results.values()):
@@ -202,11 +203,13 @@ def process_video(input_path, output_path=None, upload=True):
 
 
 if __name__ == "__main__":
-    args = [a for a in sys.argv[1:] if a != "--no-upload"]
+    flags = {"--no-upload", "--skip-upload-tt"}
+    args = [a for a in sys.argv[1:] if a not in flags]
     no_upload = "--no-upload" in sys.argv
+    skip_tt = "--skip-upload-tt" in sys.argv
 
     if len(args) < 1 or len(args) > 2 or sys.argv[1] == "--help":
-        print("Usage: python process_one_video.py [--no-upload] input.mp4 [output.mp4]")
+        print("Usage: python process_one_video.py [--no-upload] [--skip-upload-tt] input.mp4 [output.mp4]")
         print()
         print("  Resumable pipeline: crops to 9:16, removes vocals, normalizes")
         print("  audio, and uploads to Instagram, YouTube, and TikTok.")
@@ -215,7 +218,8 @@ if __name__ == "__main__":
         print("  Processing checkpoints: _cropped, _novocals, _final")
         print("  Upload status tracked in <source>.status.json")
         print()
-        print("  --no-upload   Process only, skip uploading.")
+        print("  --no-upload        Process only, skip uploading.")
+        print("  --skip-upload-tt   Skip TikTok upload.")
         print()
         print("Docker usage:")
         print("  docker compose run --rm process /videos/myclip.mp4")
@@ -223,4 +227,6 @@ if __name__ == "__main__":
         sys.exit(0 if len(sys.argv) >= 2 and sys.argv[1] == "--help" else 1)
     input_path = args[0]
     output_path = args[1] if len(args) == 2 else None
-    process_video(input_path, output_path, upload=not no_upload)
+    skip_platforms = {"TikTok"} if skip_tt else None
+    process_video(input_path, output_path, upload=not no_upload,
+                  skip_platforms=skip_platforms)
