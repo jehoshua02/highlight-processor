@@ -39,6 +39,7 @@ echo     run process-all            Process + upload all unprocessed videos
 echo     run process ^<file^> --no-upload   Process only, skip upload
 echo     run process-all --no-upload       Process all, skip upload
 echo     --skip-upload-tt           Add to any process command to skip TikTok
+echo     --limit=N                  Limit process-all to N videos
 echo.
 echo   UPLOAD (already-processed _final videos)
 echo     run upload ^<file^>         Upload to Instagram + YouTube + TikTok
@@ -84,6 +85,8 @@ set "EXTRA_FLAGS="
 for %%a in (%*) do (
     if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
     if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
+    set "_arg=%%~a"
+    if "!_arg:~0,8!"=="--limit=" set "EXTRA_FLAGS=!EXTRA_FLAGS! %%~a"
 )
 docker compose run --rm process_all !EXTRA_FLAGS! /videos
 goto :eof

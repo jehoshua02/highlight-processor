@@ -121,18 +121,29 @@ def run_one(video_path, name, no_upload=False, skip_tt=False):
 
 def main():
     flags = {"--no-upload", "--skip-upload-tt"}
-    args = [a for a in sys.argv[1:] if a not in flags]
+    args = [a for a in sys.argv[1:]
+            if a not in flags and not a.startswith("--limit=")]
     no_upload = "--no-upload" in sys.argv
     skip_tt = "--skip-upload-tt" in sys.argv
 
+    limit = None
+    for a in sys.argv[1:]:
+        if a.startswith("--limit="):
+            try:
+                limit = int(a.split("=", 1)[1])
+            except ValueError:
+                print(f"Error: invalid --limit value: {a}")
+                sys.exit(1)
+
     if len(args) != 1 or sys.argv[1] == "--help":
-        print("Usage: python process_all_videos.py [--no-upload] [--skip-upload-tt] <folder>")
+        print("Usage: python process_all_videos.py [--no-upload] [--skip-upload-tt] [--limit=N] <folder>")
         print()
         print("  Processes every video in <folder> that hasn't already")
         print("  been processed (crop 9:16 + scrub voices + normalize).")
         print()
         print("  --no-upload        Skip uploading after processing.")
         print("  --skip-upload-tt   Skip TikTok upload.")
+        print("  --limit=N          Process at most N videos.")
         print()
         print("Docker usage:")
         print("  docker compose run --rm process_all /videos")
@@ -149,6 +160,10 @@ def main():
     if not videos:
         print("No unprocessed videos found.")
         sys.exit(0)
+
+    if limit is not None and limit < len(videos):
+        print(f"Limiting to {limit} of {len(videos)} video(s).")
+        videos = videos[:limit]
 
     names = [os.path.basename(v) for v in videos]
     max_workers = min(2, len(videos))
