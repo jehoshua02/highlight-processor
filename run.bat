@@ -39,6 +39,7 @@ echo     run process-all            Process + upload all unprocessed videos
 echo     run process ^<file^> --no-upload   Process only, skip upload
 echo     run process-all --no-upload       Process all, skip upload
 echo     --skip-upload-tt           Add to any process command to skip TikTok
+echo     --voice                    Keep original audio (skip voice scrubbing)
 echo     --limit=N                  Limit process-all to N videos
 echo.
 echo   UPLOAD (already-processed _final videos)
@@ -76,11 +77,15 @@ set "EXTRA_FLAGS="
 for %%a in (%*) do (
     if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
     if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
+    if "%%~a"=="--voice" set "EXTRA_FLAGS=!EXTRA_FLAGS! --voice"
 )
 docker compose run --rm process !EXTRA_FLAGS! "%~2"
 goto :eof
 
 :process_all
+echo Building image...
+docker compose build crop
+echo.
 set "EXTRA_FLAGS="
 set "_next_is_limit="
 for %%a in (%*) do (
@@ -90,6 +95,7 @@ for %%a in (%*) do (
     ) else (
         if "%%~a"=="--no-upload" set "EXTRA_FLAGS=!EXTRA_FLAGS! --no-upload"
         if "%%~a"=="--skip-upload-tt" set "EXTRA_FLAGS=!EXTRA_FLAGS! --skip-upload-tt"
+        if "%%~a"=="--voice" set "EXTRA_FLAGS=!EXTRA_FLAGS! --voice"
         if "%%~a"=="--limit" set "_next_is_limit=1"
     )
 )

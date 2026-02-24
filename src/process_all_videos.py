@@ -83,13 +83,15 @@ def _log(prefix, line):
         print(f" [{prefix}] {line}")
 
 
-def run_one(video_path, name, no_upload=False, skip_tt=False):
+def run_one(video_path, name, no_upload=False, skip_tt=False, keep_voice=False):
     """Run process_one_video as a subprocess, printing prefixed output."""
     cmd = [sys.executable, "-u", "src/process_one_video.py"]
     if no_upload:
         cmd.append("--no-upload")
     if skip_tt:
         cmd.append("--skip-upload-tt")
+    if keep_voice:
+        cmd.append("--voice")
     cmd.append(video_path)
 
     proc = subprocess.Popen(
@@ -120,11 +122,12 @@ def run_one(video_path, name, no_upload=False, skip_tt=False):
 
 
 def main():
-    flags = {"--no-upload", "--skip-upload-tt"}
+    flags = {"--no-upload", "--skip-upload-tt", "--voice"}
     args = [a for a in sys.argv[1:]
             if a not in flags and not a.startswith("--limit=")]
     no_upload = "--no-upload" in sys.argv
     skip_tt = "--skip-upload-tt" in sys.argv
+    keep_voice = "--voice" in sys.argv
 
     limit = None
     for a in sys.argv[1:]:
@@ -136,13 +139,14 @@ def main():
                 sys.exit(1)
 
     if len(args) != 1 or sys.argv[1] == "--help":
-        print("Usage: python process_all_videos.py [--no-upload] [--skip-upload-tt] [--limit=N] <folder>")
+        print("Usage: python process_all_videos.py [--no-upload] [--skip-upload-tt] [--voice] [--limit=N] <folder>")
         print()
         print("  Processes every video in <folder> that hasn't already")
         print("  been processed (crop 9:16 + scrub voices + normalize).")
         print()
         print("  --no-upload        Skip uploading after processing.")
         print("  --skip-upload-tt   Skip TikTok upload.")
+        print("  --voice            Keep original audio (skip voice scrubbing).")
         print("  --limit=N          Process at most N videos.")
         print()
         print("Docker usage:")
@@ -174,7 +178,7 @@ def main():
     results_lock = threading.Lock()
 
     def worker(video_path, name):
-        result = run_one(video_path, name, no_upload, skip_tt)
+        result = run_one(video_path, name, no_upload, skip_tt, keep_voice)
         with results_lock:
             results[name] = result
 
