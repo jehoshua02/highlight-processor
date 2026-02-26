@@ -85,6 +85,7 @@ goto :eof
 :process_all
 echo Building image...
 docker compose build crop
+docker compose up -d ngrok
 echo.
 set "EXTRA_FLAGS="
 set "_next_is_limit="
