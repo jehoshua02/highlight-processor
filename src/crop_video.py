@@ -69,8 +69,8 @@ def crop_video_9_16(input_path, output_path=None):
         "ffmpeg", "-y",
         "-i", input_path,
         "-vf", f"crop={crop_w}:{crop_h}:{x_offset}:{y_offset},scale=1080:1920",
-        "-c:v", "libx264", "-preset", "fast", "-crf", "18",
-        "-c:a", "aac", "-b:a", "192k",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+        "-c:a", "aac", "-b:a", "128k",
         "-movflags", "+faststart",
         output_path,
     ]
