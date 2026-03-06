@@ -188,8 +188,19 @@ def upload_short(filepath):
     description = _description_from_filename(filepath)
     tags_str = config('tags.youtube', '')
     tags = [t.lstrip('#') for t in tags_str.split() if t.startswith('#')]
-    if tags:
-        description = f"{description}\n\n" + " ".join([f"#{t}" for t in tags])
+    hashtags = [f"#{t}" for t in tags]
+
+    # Add hashtags to title if not already present
+    for ht in hashtags:
+        if ht not in title:
+            title += f" {ht}"
+
+    # Add hashtags to description if not already present
+    desc_lines = [description]
+    for ht in hashtags:
+        if ht not in description:
+            desc_lines.append(ht)
+    description = "\n\n".join(desc_lines)
 
     print(f"Title:       {title}")
     print(f"Description: {description or '(none)'}")
