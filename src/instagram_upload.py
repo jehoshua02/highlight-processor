@@ -15,6 +15,7 @@ Required environment variables:
     NGROK_URL           Base ngrok URL (e.g. https://brief-presently-snipe.ngrok-free.app)
 """
 
+
 import sys
 import os
 import json
@@ -22,6 +23,10 @@ import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode, quote
 from urllib.error import HTTPError
+
+
+# DRY: Use config_helper for config access
+from config_helper import config
 
 GRAPH_API = "https://graph.instagram.com/v21.0"
 POLL_INTERVAL = 30       # seconds between status checks
@@ -179,12 +184,16 @@ def publish(user_id, token, container_id):
 
 
 def _caption_from_filename(filepath):
-    """Derive a caption from the video filename."""
+    """Derive a caption from the video filename, appending tags from config.json."""
     base = os.path.splitext(os.path.basename(filepath))[0]
     for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
         base = base.replace(suffix, "")
     name = base.replace("_", " ").strip().title()
-    return f"{name}\n\n#Reels #Gaming #Highlights"
+    tags = config('tags.instagram', '')
+    caption = name
+    if tags:
+        caption = f"{caption} {tags}"
+    return caption
 
 
 def upload_reel(filepath):

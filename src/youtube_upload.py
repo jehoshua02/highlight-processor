@@ -21,6 +21,9 @@ Required environment variables (--auth):
     YT_CLIENT_SECRET    OAuth2 client secret
 """
 
+
+
+# DRY: Use config_helper for config access
 import sys
 import os
 import json
@@ -29,6 +32,7 @@ import webbrowser
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode, urlparse, parse_qs
 from urllib.error import HTTPError
+from config_helper import config
 
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
@@ -86,13 +90,13 @@ def _get_access_token(client_id, client_secret, refresh_token):
     return token
 
 
-def _init_resumable_upload(access_token, title, description, category, privacy):
+def _init_resumable_upload(access_token, title, description, category, privacy, tags):
     """Start a resumable upload session and return the upload URL."""
     metadata = {
         "snippet": {
             "title": title,
             "description": description,
-            "tags": ["Shorts", "gaming", "highlights"],
+            "tags": tags,
             "categoryId": category,
         },
         "status": {
@@ -179,7 +183,7 @@ def _description_from_filename(filepath):
 
 
 def upload_short(filepath):
-    """Full upload flow: validate → get token → init upload → send file."""
+    """Full upload flow: validate  get token  init upload  send file."""
     validate_file(filepath)
 
     client_id = _require_env("YT_CLIENT_ID")
@@ -188,14 +192,19 @@ def upload_short(filepath):
 
     title = _title_from_filename(filepath)
     description = _description_from_filename(filepath)
+    tags_str = config('tags.youtube', '')
+    tags = [t.lstrip('#') for t in tags_str.split() if t.startswith('#')]
+    if tags:
+        description = f"{description}\n\n" + " ".join([f"#{t}" for t in tags])
 
     print(f"Title:       {title}")
     print(f"Description: {description or '(none)'}")
+    print(f"Tags:        {tags}")
     print()
 
     access_token = _get_access_token(client_id, client_secret, refresh_token)
     upload_url = _init_resumable_upload(
-        access_token, title, description, CATEGORY_GAMING, "public"
+        access_token, title, description, CATEGORY_GAMING, "public", tags
     )
     return _upload_file(upload_url, filepath)
 

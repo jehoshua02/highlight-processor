@@ -19,6 +19,7 @@ Required environment variables (--auth):
     TT_CLIENT_SECRET    TikTok app client secret
 """
 
+
 import sys
 import os
 import json
@@ -27,6 +28,10 @@ import time
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode, urlparse, parse_qs
 from urllib.error import HTTPError
+
+
+# DRY: Use config_helper for config access
+from config_helper import config
 
 TOKEN_URI = "https://open.tiktokapis.com/v2/oauth/token/"
 AUTH_URI = "https://www.tiktok.com/v2/auth/authorize/"
@@ -225,12 +230,15 @@ def _poll_status(access_token, publish_id):
 
 
 def _title_from_filename(filepath):
-    """Derive a caption/title from the video filename (max 150 chars)."""
+    """Derive a caption/title from the video filename (max 150 chars), appending tags from config.json."""
     base = os.path.splitext(os.path.basename(filepath))[0]
     for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
         base = base.replace(suffix, "")
     name = base.replace("_", " ").strip().title()
-    title = f"{name} #Gaming #Highlights"
+    tags = config('tags.tiktok', '')
+    title = f"{name}"
+    if tags:
+        title = f"{title} {tags}"
     return title[:150]
 
 
