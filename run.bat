@@ -22,6 +22,7 @@ if "%~1"=="auth-tt" goto :auth_tt
 if "%~1"=="tunnel" goto :tunnel
 if "%~1"=="list" goto :list
 if "%~1"=="build" goto :build
+if "%~1"=="update-tags-yt" goto :update_tags_yt
 
 echo Unknown command: %~1
 echo.
@@ -62,6 +63,8 @@ echo     run tunnel                 Start ngrok + file server (background)
 echo     run list                   List videos in the videos/ folder
 echo     run build                  Rebuild Docker images
 echo.
+echo   TAGS
+echo     run update-tags-yt ^<video_id^> ^<tag1,tag2,...^>   Update tags for a YouTube video
 echo   ^<file^> is a path inside the container, e.g. "/videos/myclip.mp4"
 echo.
 goto :eof
@@ -160,8 +163,20 @@ if "%~2"=="" (
 docker compose run --rm normalize "%~2"
 goto :eof
 
+:update_tags_yt
+if "%~2"=="" (
+    echo Usage: run update-tags-yt ^<video_id^> [^<tag1,tag2,...^>]
+    exit /b 1
+)
+if "%~3"=="" (
+    docker compose run --rm youtube_update_tags "%~2"
+) else (
+    docker compose run --rm youtube_update_tags "%~2" "%~3"
+)
+goto :eof
+
 :auth_yt
-docker compose run --rm -p 8080:8080 youtube_upload --auth
+docker compose run --rm -p 8080:8080 youtube_auth
 goto :eof
 
 :auth_tt

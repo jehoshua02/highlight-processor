@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy source code
 COPY src/ /app/src/
+COPY config.json /app/config.json
 
 # Ensure src/ is on the Python path so modules can import each other
 ENV PYTHONPATH="/app/src:${PYTHONPATH}"

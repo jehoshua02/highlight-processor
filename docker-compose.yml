@@ -6,6 +6,22 @@ x-processing: &processing
   working_dir: /app
 
 services:
+  youtube_auth:
+    <<: *processing
+    environment:
+      - YT_CLIENT_ID=${YT_CLIENT_ID}
+      - YT_CLIENT_SECRET=${YT_CLIENT_SECRET}
+    entrypoint: ["python", "src/youtube_auth.py"]
+    ports:
+      - "8080:8080"
+
+  youtube_update_tags:
+    <<: *processing
+    environment:
+      - YT_CLIENT_ID=${YT_CLIENT_ID}
+      - YT_CLIENT_SECRET=${YT_CLIENT_SECRET}
+      - YT_REFRESH_TOKEN=${YT_REFRESH_TOKEN}
+    entrypoint: ["python", "src/update_youtube_tags.py"]
   crop:
     <<: *processing
     entrypoint: ["python", "src/crop_video.py"]

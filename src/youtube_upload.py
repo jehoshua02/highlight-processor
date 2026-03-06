@@ -9,16 +9,11 @@ Title and description are derived automatically from the video filename.
 
 Usage:
     python youtube_upload.py <video_path>
-    python youtube_upload.py --auth
 
-Required environment variables (upload):
+Required environment variables:
     YT_CLIENT_ID        OAuth2 client ID from Google Cloud Console
     YT_CLIENT_SECRET    OAuth2 client secret
-    YT_REFRESH_TOKEN    Refresh token (obtain via --auth)
-
-Required environment variables (--auth):
-    YT_CLIENT_ID        OAuth2 client ID
-    YT_CLIENT_SECRET    OAuth2 client secret
+    YT_REFRESH_TOKEN    Refresh token (obtain via youtube_auth.py)
 """
 
 
@@ -37,7 +32,6 @@ from config_helper import config
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 AUTH_URI = "https://accounts.google.com/o/oauth2/auth"
 UPLOAD_URI = "https://www.googleapis.com/upload/youtube/v3/videos"
-SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 REDIRECT_URI = "http://localhost:8080"
 CATEGORY_GAMING = "20"
 CHUNK_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -209,101 +203,18 @@ def upload_short(filepath):
     return _upload_file(upload_url, filepath)
 
 
-def authenticate():
-    """One-time OAuth flow to obtain a refresh token.
-
-    Starts a tiny HTTP server on port 8080, prints a URL for the user
-    to visit, and exchanges the authorization code for tokens.
-    """
-    client_id = _require_env("YT_CLIENT_ID")
-    client_secret = _require_env("YT_CLIENT_SECRET")
-
-    auth_params = urlencode({
-        "client_id": client_id,
-        "redirect_uri": REDIRECT_URI,
-        "response_type": "code",
-        "scope": SCOPE,
-        "access_type": "offline",
-        "prompt": "consent",
-    })
-    auth_url = f"{AUTH_URI}?{auth_params}"
-
-    print("Open this URL in your browser:\n")
-    print(f"  {auth_url}\n")
-
-    # Tiny server to catch the redirect with the auth code
-    auth_code = None
-
-    class Handler(http.server.BaseHTTPRequestHandler):
-        def do_GET(self):
-            nonlocal auth_code
-            qs = parse_qs(urlparse(self.path).query)
-            auth_code = qs.get("code", [None])[0]
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.end_headers()
-            self.wfile.write(b"<h1>Authorization received. You can close this tab.</h1>")
-
-        def log_message(self, *args):
-            pass  # suppress request logs
-
-    server = http.server.HTTPServer(("0.0.0.0", 8080), Handler)
-    print("Waiting for authorization …")
-    server.handle_request()
-    server.server_close()
-
-    if not auth_code:
-        print("Error: no authorization code received.")
-        sys.exit(1)
-
-    # Exchange code for tokens
-    data = urlencode({
-        "code": auth_code,
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "redirect_uri": REDIRECT_URI,
-        "grant_type": "authorization_code",
-    }).encode()
-
-    req = Request(TOKEN_URI, data=data, method="POST")
-    try:
-        with urlopen(req) as resp:
-            result = json.loads(resp.read())
-    except HTTPError as exc:
-        body = exc.read().decode()
-        print(f"Token exchange failed ({exc.code}): {body}")
-        sys.exit(1)
-
-    refresh = result.get("refresh_token")
-    if not refresh:
-        print(f"No refresh_token in response: {result}")
-        sys.exit(1)
-
-    print()
-    print("Authentication successful!")
-    print()
-    print("Add this to your .env file:")
-    print(f"  YT_REFRESH_TOKEN={refresh}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] == "--help":
         print("Usage: python youtube_upload.py <video_path>")
-        print("       python youtube_upload.py --auth")
         print()
         print("  Uploads a _final video to YouTube Shorts.")
         print("  Title and description are derived from the filename.")
         print()
-        print("  --auth    Run one-time OAuth flow to get a refresh token.")
-        print("            Starts a local server on port 8080.")
-        print()
         print("Docker usage:")
         print('  docker compose run --rm youtube_upload "/videos/clip_final.mp4"')
-        print('  docker compose run --rm -p 8080:8080 youtube_upload --auth')
         sys.exit(0 if sys.argv[-1] == "--help" else 1)
 
-    if sys.argv[1] == "--auth":
-        authenticate()
-    else:
-        filepath = sys.argv[1]
-        upload_short(filepath)
+    filepath = sys.argv[1]
+    upload_short(filepath)
