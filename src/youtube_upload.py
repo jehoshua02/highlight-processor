@@ -186,8 +186,8 @@ def upload_short(filepath):
 
     title = _title_from_filename(filepath)
     description = _description_from_filename(filepath)
-    tags_str = config('tags.youtube', '')
-    tags = [t.lstrip('#') for t in tags_str.split() if t.startswith('#')]
+
+    tags = config('tags.youtube', [])
     hashtags = [f"#{t}" for t in tags]
 
     # Add hashtags to title if not already present

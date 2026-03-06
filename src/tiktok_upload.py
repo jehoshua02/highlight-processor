@@ -235,10 +235,11 @@ def _title_from_filename(filepath):
     for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
         base = base.replace(suffix, "")
     name = base.replace("_", " ").strip().title()
-    tags = config('tags.tiktok', '')
+    tags = config('tags.tiktok', [])
+    hashtags = [f"#{t}" for t in tags]
     title = f"{name}"
-    if tags:
-        title = f"{title} {tags}"
+    if hashtags:
+        title = f"{title} {' '.join(hashtags)}"
     return title[:150]
 
 

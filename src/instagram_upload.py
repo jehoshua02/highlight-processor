@@ -189,10 +189,11 @@ def _caption_from_filename(filepath):
     for suffix in ("_final", "_novocals", "_cropped_9_16", "_processing"):
         base = base.replace(suffix, "")
     name = base.replace("_", " ").strip().title()
-    tags = config('tags.instagram', '')
+    tags = config('tags.instagram', [])
+    hashtags = [f"#{t}" for t in tags]
     caption = name
-    if tags:
-        caption = f"{caption} {tags}"
+    if hashtags:
+        caption = f"{caption} {' '.join(hashtags)}"
     return caption
 
 
