@@ -190,11 +190,6 @@ def upload_short(filepath):
     tags = config('tags.youtube', [])
     hashtags = [f"#{t}" for t in tags]
 
-    # Add hashtags to title if not already present
-    for ht in hashtags:
-        if ht not in title:
-            title += f" {ht}"
-
     # Add hashtags to description if not already present
     desc_lines = [description]
     for ht in hashtags:
