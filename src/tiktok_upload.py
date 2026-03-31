@@ -97,13 +97,12 @@ def _refresh_access_token(client_key, client_secret, refresh_token):
 
     return token
 
-
 def _init_upload(access_token, title, filepath):
     """Initialize a direct-post file upload and return (publish_id, upload_url)."""
     file_size = os.path.getsize(filepath)
 
     chunk_size = min(CHUNK_SIZE, file_size)
-    total_chunks = max(1, file_size // chunk_size)
+    total_chunks = math.ceil(file_size / CHUNK_SIZE)
 
     payload = {
         "post_info": {
